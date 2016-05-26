@@ -1,1 +1,23 @@
 = tomcat-utils
+
+some bash script help 
+
+== setup-catalina-base
+
+
+Usage: `basename ${0}` [OPTIONS]... WEBAPP... CONTEXT"
+
+Deploy webapp to tomcat on a context. Deploying webapp to localhost on 
+Catalina engine is supported, tomcat CONTEXT version is not support
+  WEBAPP      can be war file or directory
+  CONTEXT     must start with /, can has sub directory
+  -d, --dest        The destination directory the WEBAPP will be deployed to, 
+                    if not set,DEFAULT is CATALINA_BASE/apps.
+  -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
+                    -ment variable, CATALINA_BASE is set to CATALINA_HOME, If 
+                    CATALINA_HOME enviroment variable is not set yet, error
+                    arise then exit
+  -h, --help        display this help and exit
+EXAMPLE
+    `basename ${0}` -d /var/apps -b /var/catalina_base  ~/example.war /
+    `basename ${0}`  ~/example.war  /api/v1.0
