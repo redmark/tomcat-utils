@@ -1,0 +1,152 @@
+#!/bin/bash
+usage(){
+    echo "Usage: `basename ${0}` [OPTIONS]... WEBAPP... CONTEXT"
+    echo -e \
+"
+Deploy webapp to tomcat on a context. Deploying webapp to localhost on 
+Catalina engine is supported, tomcat CONTEXT version is not support
+
+  WEBAPP      can be war file or directory
+  CONTEXT     must start with /, can has sub directory
+
+  -d, --dest        The destination directory the WEBAPP will be deployed to, 
+                    if not set,DEFAULT is CATALINA_BASE/apps.
+  -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
+                    -ment variable, CATALINA_BASE is set to CATALINA_HOME, If 
+                    CATALINA_HOME enviroment variable is not set yet, error
+                    arise then exit
+  -h, --help        display this help and exit
+
+EXAMPLE
+    `basename ${0}` -d /var/apps -b /var/catalina_base  ~/example.war /
+    `basename ${0}`  ~/example.war  /api/v1.0
+"
+    exit 1
+}
+
+invalidopt(){
+    #parameter expansion. leave $1 empty, if it is empty, otherwise prepend dash dash  and embrace by single quote .
+    #leave $2 empty, if it is empty, otherwise prepend colon
+    echo "`basename ${0}`: invalid option ${1:+--'${1}'} ${2:+: ${2}}"
+    echo "Try '`basename ${0}` --help' for more information"
+    exit 1
+}
+
+invalidparam(){
+    echo "`basename ${0}`: invalid parameters ${1:+--'${1}'} ${2:+: ${2}}"
+    echo "Try '`basename ${0}` --help' for more information"
+    exit 1
+}
+
+###################### parse positional parameters
+while [[ $1 ]]; do
+    case $1 in
+        -d | --dest )
+            DEST_WEBAPP_LOC=$2
+            if [[ -z $2 ]]; then
+                invalidopt $1 "must be followed by a path"
+            else
+                shift 2 
+            fi
+            ;;
+        -b | --base )
+            CATALINA_BASE=$2
+            if [[ -z $2 ]]; then
+                invalidopt $1 "must be followed by a path"
+            else
+                shift 2 
+            fi
+            shift 2
+            ;;
+        -h | --help )
+            usage
+            break
+            ;;
+        -- ) # End of all options
+            shift
+            break
+            ;;
+        -* ) 
+            invalidopt $1
+            ;;
+        * )
+            if [[ -z $WEBAPP ]]; then
+                WEBAPP=$1;
+            elif [[ -z $CONTEXT ]]; then
+                CONTEXT=$1; 
+            else
+                invalidparam "" "requires only two parameters"
+            fi
+            shift
+           ;;
+    esac
+done
+
+if [[ -z $WEBAPP || -z $CONTEXT ]]; then
+    invalidparam "" "WEBAPP and CONTEXT can not be empty"
+fi
+
+############# check CATALINA_BASE & CATALINA_HOME
+if [[ -z $CATALINA_BASE ]]; then
+    echo "CATALINA_BASE is not set, set it to CATALINA_HOME"
+    CATALINA_BASE=$CATALINA_HOME
+fi
+
+if [[ -z $CATALINA_BASE ]]; then
+    invalidopt "-b"  "-b CATALINA_BASE need be set, or set CATALINA_BASE or 
+    CATALINA_HOME viarable in enviroment"
+fi
+
+############ check WEBAPP and CONTEXT
+WEBAPP_EXTNAME=${WEBAPP##*.}
+if [[ ! -f $WEBAPP || ${WEBAPP_EXTNAME,,} != "war" ]]; then
+    invalidparam "WEBAPP" "must be war file"
+fi
+
+#### /
+#### /abc
+#### /abc/
+#### /abc/xyz
+#### /abc/x-y_z/v1.1
+CONTEXT_REGEX="^/(([a-zA-Z0-9._\-]+/?)*)$"
+
+if [[ ! $CONTEXT =~ $CONTEXT_REGEX ]]; then
+    invalidparam "CONTEXT" "must be started with /"
+else
+    #https://tomcat.apache.org/tomcat-8.0-doc/config/context.html
+    CONTEXT_FILE=${BASH_REMATCH[1]}           # get context after /
+    CONTEXT_FILE=${CONTEXT_FILE%/}            # cut last / if existed , e.g. abc/  => abc
+    CONTEXT_FILE=${CONTEXT_FILE:-ROOT}        # set file name to ROOT if empty
+    CONTEXT_FILE=${CONTEXT_FILE//\//#}.xml    # change / to #
+
+    CONTEXT=${BASH_REMATCH[0]}                # get context
+    CONTEXT=${CONTEXT%/}                      #
+fi
+
+#################### prepare and display vairable
+DEST_WEBAPP_LOC=${DEST_WEBAPP_LOC:-$CATALINA_BASE/apps}
+DEST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/localhost
+DEST_CONTEXT_FILE=$CONTEXT_FILE
+WEBAPPNAME=$(basename ${WEBAPP})
+
+echo "Display param, location and file"
+echo -e "\tCATALINA_HOME=\e[1m${CATALINA_HOME}\e[0m"
+echo -e "\tCATALINA_BASE=\e[1m${CATALINA_BASE}\e[0m"
+echo -e "\tWEBAPP=\e[1m${WEBAPP}\e[0m"
+echo -e "\tWEBAPPNAME=\e[1m${WEBAPPNAME}\e[0m"
+echo -e "\tCONTEXT=\e[1m${CONTEXT}\e[0m"
+echo "-----------------------------"
+echo -e "\tDEST_WEBAPP_LOC=\e[1m${DEST_WEBAPP_LOC}\e[0m"
+echo -e "\tDEST_CONTEXT_LOC=\e[1m${DEST_CONTEXT_LOC}\e[0m"
+echo -e "\tDEST_CONTEXT_FILE=\e[1m${DEST_CONTEXT_FILE}\e[0m"
+
+###################### cp webapp 
+test -e ${DEST_WEBAPP_LOC}/${WEBAPPNAME} && rm ${DEST_WEBAPP_LOC}/${WEBAPPNAME} 
+mkdir $DEST_WEBAPP_LOC -p && cp $WEBAPP $DEST_WEBAPP_LOC
+
+###################### build context configuration file 
+test -e ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE} && rm ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
+mkdir $DEST_CONTEXT_LOC -p && touch ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
+echo "<Context path=\"${CONTEXT}\" docBase=\"${DEST_WEBAPP_LOC}/${WEBAPPNAME}\"/>" >> ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
+

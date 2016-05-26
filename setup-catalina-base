@@ -1,0 +1,57 @@
+#!/bin/bash
+
+SRC_TOMCAT_DIR=$1
+DEST_CATALINA_BASE=$2
+
+usage(){
+  echo "Usage: $0 tomcat_inst_dir dest_catalina_base_dir" 
+}
+
+if [ ! $# -eq 2 ]; then
+  usage
+  exit 1
+fi
+
+if [ ! -d $SRC_TOMCAT_DIR ]; then
+  echo "$SRC_TOMCAT_DIR is not directory"
+  exit 1
+fi
+    
+if  [ ! -r $SRC_TOMCAT_DIR ]; then
+  echo "$SRC_TOMCAT_DIR can not read"
+  exit 1
+fi
+
+if [ ! -d $SRC_TOMCAT_DIR/conf ]; then
+  echo "$SRC_TOMCAT_DIR/conf directory not exists"
+  exit 1
+fi
+
+if [ ! -e $DEST_CATALINA_BASE ]; then
+  echo "$DEST_CATALINA_BASE does not exist, create it" 
+  mkdir $DEST_CATALINA_BASE
+fi
+
+mkdir $DEST_CATALINA_BASE/conf -p
+if [ ! -r $SRC_TOMCAT_DIR/conf/server.xml ]; then
+  echo "file under $SRC_TOMCAT_DIR/conf can not be read, you should use sudo"
+  sudo cp $SRC_TOMCAT_DIR/conf/* $DEST_CATALINA_BASE/conf
+else
+  cp $SRC_TOMCAT_DIR/conf/* $DEST_CATALINA_BASE/conf
+fi
+sudo chown `id -nu`.`id -ng` $DEST_CATALINA_BASE/conf/*
+
+mkdir $DEST_CATALINA_BASE/bin -p
+touch $DEST_CATALINA_BASE/bin/setenv.sh
+
+mkdir $DEST_CATALINA_BASE/lib -p
+
+mkdir $DEST_CATALINA_BASE/logs -p
+
+mkdir $DEST_CATALINA_BASE/temp -p
+
+mkdir $DEST_CATALINA_BASE/webapps -p
+
+mkdir $DEST_CATALINA_BASE/work -p
+
+echo "CATALINA_BASE directory created, next you should set CATALINA_BASE enviroment"
