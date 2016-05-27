@@ -1,6 +1,6 @@
 = tomcat-utils
 
-some bash script help 
+some bash script for tomcat 
 
 == setup-catalina-base
 
