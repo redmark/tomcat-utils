@@ -1,6 +1,6 @@
 #!/bin/bash
 usage(){
-    echo "Usage: `basename ${0}` [OPTIONS]... WEBAPP... CONTEXT"
+    echo "Usage: `basename ${0}` [OPTIONS]... WEBAPP CONTEXT"
     echo -e \
 "
 Deploy webapp to tomcat on a context. Deploying webapp to localhost on 
@@ -58,6 +58,10 @@ while [[ $1 ]]; do
             fi
             shift 2
             ;;
+        -t | --test )
+            FLAG_TEST=0
+            shift
+            ;;
         -h | --help )
             usage
             break
@@ -94,7 +98,7 @@ fi
 
 if [[ -z $CATALINA_BASE ]]; then
     invalidopt "-b"  "-b CATALINA_BASE need be set, or set CATALINA_BASE or 
-    CATALINA_HOME viarable in enviroment"
+    CATALINA_HOME variable in enviroment"
 fi
 
 ############ check WEBAPP and CONTEXT
@@ -139,6 +143,11 @@ echo "-----------------------------"
 echo -e "\tDEST_WEBAPP_LOC=\e[1m${DEST_WEBAPP_LOC}\e[0m"
 echo -e "\tDEST_CONTEXT_LOC=\e[1m${DEST_CONTEXT_LOC}\e[0m"
 echo -e "\tDEST_CONTEXT_FILE=\e[1m${DEST_CONTEXT_FILE}\e[0m"
+
+if [[ $FLAG_TEST ]]; then
+  echo -e "\e[1mNOT do anything!\e[0m display param, location and file for test"
+  exit 0
+fi
 
 ###################### cp webapp 
 test -e ${DEST_WEBAPP_LOC}/${WEBAPPNAME} && rm ${DEST_WEBAPP_LOC}/${WEBAPPNAME} 
