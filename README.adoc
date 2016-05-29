@@ -1,6 +1,6 @@
 = tomcat-utils
 
-some bash script for tomcat 
+some bash script for tomcat
 
 == setup-catalina-base
 
@@ -12,13 +12,13 @@ Make one or more tomcat CATALINA_BASE directory
 
 [source]
   DIRECTORY         Destination DIRECTORY(s) for CATALINA_BASE
-  -m, --home        Overides CATALINA_HOME enviroment variable. If 
+  -m, --home        Overides CATALINA_HOME enviroment variable. If
                     CATALINA_HOME enviroment variable is not set yet, error
                     arise then exit
-  -u, --user        Set the owner of CATALINA_BASE DIRECTORY. If the bash 
+  -u, --user        Set the owner of CATALINA_BASE DIRECTORY. If the bash
                     executor is not root, the option will be ignored.
-                    In Some tomcat tarball, files in CATALINA_HOME/conf/ 
-                    is readonly except creator, so su or sudo is needed, 
+                    In Some tomcat tarball, files in CATALINA_HOME/conf/
+                    is readonly except creator, so su or sudo is needed,
                     in the case -u option is used to set owner of DIRECTORY
                     system path.
   -t, --test        NOT do anything! display param, location and file for test
@@ -40,8 +40,8 @@ Deploy webapp to tomcat. Deploying webapp to localhost on
 Catalina engine is supported, tomcat CONTEXT version is not support
 
 [source]
-  WEBAPP            can be war file 
-  CONTEXT           must start with /, can has sub directory 
+  WEBAPP            can be war file
+  CONTEXT           must start with /, can has sub directory
   -d, --dest        The destination directory the WEBAPP will be deployed to,
                     if not set,DEFAULT is CATALINA_BASE/apps.
   -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
@@ -52,7 +52,7 @@ Catalina engine is supported, tomcat CONTEXT version is not support
   -h, --help        display this help and exit
 
 [source]
-EXAMPLE 
+EXAMPLE
     setup-catalina-base -d /var/apps -b /var/catalina_base  ~/example.war /
     setup-catalina-base  ~/example.war  /api/v1.0
 
