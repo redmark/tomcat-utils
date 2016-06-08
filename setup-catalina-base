@@ -16,11 +16,12 @@ Make one or more tomcat CATALINA_BASE directory
                     is readonly except creator, so su or sudo is needed,
                     in the case -u option is used to set owner of DIRECTORY
                     system path.
-  -t, --test        NOT do anything! display param, location and file for test
+  -x                Really do the command! Without the option, NOT do
+                    anything! display param, location and file for test
   -h, --help        display this help and exit
 
 EXAMPLE
-    `basename ${0}` -m /opt/tomcat ~/base1
+    `basename ${0}` -m /opt/tomcat ~/base1 -x
     `basename ${0}` ~/base1 ~/base2 ~/base3
     sudo `basename ${0}` ~/base1 -u foo
 "
@@ -58,8 +59,8 @@ while [[ $1 ]]; do
                 shift 2
             fi
             ;;
-        -t | --test )
-            FLAG_TEST=0
+        -x )
+            FLAG_DO="y"
             shift
             ;;
         -h | --help )
@@ -95,7 +96,7 @@ if [ ! -r $CATALINA_HOME/conf/server.xml ]; then
 fi
 
 #################### check whether root user
-if [[ $(id -nu) -ne 0  ]]; then
+if [[ $(id -u) -ne 0  ]]; then
   DEST_OWNER=""            #if not root , ignore -u option
 fi
 
@@ -104,7 +105,7 @@ echo -e "CATALINA_HOME=\e[1m$CATALINA_HOME\e[0m"
 echo -e "dest base(s)...=\e[1m${DEST_CATALINA_BASES[@]}\e[0m"
 echo -e "DEST_OWNER=\e[1m${DEST_OWNER}\e[0m"
 
-if [[ $FLAG_TEST ]]; then
+if [[ -z $FLAG_DO ]]; then
     echo -e "\e[1mNOT do anything!\e[0m display param, location and file for test"
     exit 0
 fi
