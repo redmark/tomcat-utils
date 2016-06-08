@@ -2,57 +2,90 @@
 
 some bash script for tomcat
 
-== setup-catalina-base
+  $ sudo setup-java-env -s -x                     #setup java tomcat maven
+  $ sudo setup-catalina-base ~/catalina_base -x   #setup a catalina base
+  $ setup-catalina-base -b  ~/catalina_base  ~/example.war /example/v1.0 -x
 
-[source]
-Usage: setup-catalina-base [OPTIONS]... DIRECTORY...
+deploy example.war to a catalina_base on context /example/v1.0
 
-[source]
-Make one or more tomcat CATALINA_BASE directory
 
-[source]
-  DIRECTORY         Destination DIRECTORY(s) for CATALINA_BASE
-  -m, --home        Overides CATALINA_HOME enviroment variable. If
-                    CATALINA_HOME enviroment variable is not set yet, error
-                    arise then exit
-  -u, --user        Set the owner of CATALINA_BASE DIRECTORY. If the bash
-                    executor is not root, the option will be ignored.
-                    In Some tomcat tarball, files in CATALINA_HOME/conf/
-                    is readonly except creator, so su or sudo is needed,
-                    in the case -u option is used to set owner of DIRECTORY
-                    system path.
-  -t, --test        NOT do anything! display param, location and file for test
+
+== setup-java-env
+
+  Usage: setup-java-env options... DIRECTORY
+
+  Install jdk, tomcat and maven tarball, generate script to set JAVA_HOME
+  MAVEN_HOME CATALINA_HOME and PATH enviroment variable.
+
+  DIRECTORY         directory will be created to hold symbolic links of jdk,
+                    tomcat and maven, while DIRECTORY/tools to hold their
+                    targets
+
+  -l, --location    The location of local tarballs, default ~/Downloads
+  -s, --system      System wide installation. If set, default DIRECTORY set to
+                    /opt, a java.sh script will be generate to /etc/profile.d/
+                    which contains java maven tomcat enviroment variable.
+                    Otherwise default DIRECTORY set to ~/opt and enviroment
+                    variable set in ~/.bashrc. If -s is set, the script must
+                    run by root or sudo
+  -x                Really do the command! Without the option, NOT do
+                    anything! display param, location and file for test
   -h, --help        display this help and exit
 
-[source]
-EXAMPLE
-    setup-catalina-base -m /opt/tomcat ~/base1
-    setup-catalina-base ~/base1 ~/base2 ~/base3
-    sudo setup-catalina-base ~/base1 -u foo
+  EXAMPLE
+      setup-java-env
+      setup-java-env -l /tmp/download /data/run
+      sudo setup-java-env -s -x
+
+
+
+== setup-catalina-base
+
+  Usage: setup-catalina-base [OPTIONS]... DIRECTORY...
+
+  Make one or more tomcat CATALINA_BASE directory
+
+    DIRECTORY         Destination DIRECTORY(s) for CATALINA_BASE
+    -m, --home        Overides CATALINA_HOME enviroment variable. If
+                      CATALINA_HOME enviroment variable is not set yet, error
+                      arise then exit
+    -u, --user        Set the owner of CATALINA_BASE DIRECTORY. If the bash
+                      executor is not root, the option will be ignored.
+                      In Some tomcat tarball, files in CATALINA_HOME/conf/
+                      is readonly except creator, so su or sudo is needed,
+                      in the case -u option is used to set owner of DIRECTORY
+                      system path.
+    -x                Really do the command! Without the option, NOT do
+                      anything! display param, location and file for test
+    -h, --help        display this help and exit
+
+
+  EXAMPLE
+      setup-catalina-base -m /opt/tomcat ~/base1
+      setup-catalina-base ~/base1 ~/base2 ~/base3
+      sudo setup-catalina-base ~/base1 -u foo
 
 == depoly-to-tomcat
 
-[source]
-Usage: setup-catalina-base [OPTIONS] WEBAPP CONTEXT
+  Usage: setup-catalina-base [OPTIONS]... WEBAPP CONTEXT
 
-[source]
-Deploy webapp to tomcat. Deploying webapp to localhost on
-Catalina engine is supported, tomcat CONTEXT version is not support
+  Deploy webapp to tomcat. Deploying webapp to localhost on
+  Catalina engine is supported, tomcat CONTEXT version is not support
 
-[source]
-  WEBAPP            can be war file
-  CONTEXT           must start with /, can has sub directory
-  -d, --dest        The destination directory the WEBAPP will be deployed to,
-                    if not set,DEFAULT is CATALINA_BASE/apps.
-  -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
-                    -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
-                    CATALINA_HOME enviroment variable is not set yet, error
-                    arise then exit
-  -t, --test        NOT do anything! display param, location and file for test
-  -h, --help        display this help and exit
 
-[source]
-EXAMPLE
-    setup-catalina-base -d /var/apps -b /var/catalina_base  ~/example.war /
-    setup-catalina-base  ~/example.war  /api/v1.0
+    WEBAPP            can be war file
+    CONTEXT           must start with /, can has sub directory
+    -d, --dest        The destination directory the WEBAPP will be deployed to,
+                      if not set,DEFAULT is CATALINA_BASE/apps.
+    -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
+                      -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
+                      CATALINA_HOME enviroment variable is not set yet, error
+                      arise then exit
+    -x                Really do the command! Without the option, NOT do
+                      anything! display param, location and file for test
+    -h, --help        display this help and exit
+
+  EXAMPLE
+      setup-catalina-base -d /var/apps -b /var/catalina_base  ~/example.war / -x
+      setup-catalina-base  ~/example.war  /api/v1.0
 
