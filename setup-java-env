@@ -1,0 +1,185 @@
+#!/bin/bash
+usage(){
+    echo "Usage: `basename ${0}` options... DIRECTORY"
+    echo -e \
+"
+Install jdk, tomcat and maven tarball, generate script to set JAVA_HOME
+MAVEN_HOME CATALINA_HOME and PATH enviroment variable.
+
+  DIRECTORY         directory will be created to hold symbolic links of jdk,
+                    tomcat and maven, while DIRECTORY/tools to hold their
+                    targets
+
+  -l, --location    The location of local tarballs, default ~/Downloads
+  -s, --system      System wide installation. If set, default DIRECTORY set to
+                    /opt, a java.sh script will be generate to /etc/profile.d/
+                    which contains java maven tomcat enviroment variable.
+                    Otherwise default DIRECTORY set to ~/opt and enviroment
+                    variable set in ~/.bashrc. If -s is set, the script must
+                    run by root or sudo
+  -x                Really do the command! Without the option, NOT do
+                    anything! display param, location and file for test
+  -h, --help        display this help and exit
+
+EXAMPLE
+    `basename ${0}`
+    `basename ${0}` -l /tmp/download /data/run
+    sudo `basename ${0}` -s -x
+"
+    exit 1
+}
+
+invalidopt(){
+    echo "`basename ${0}`: invalid option ${1:+--'${1}'} ${2:+: ${2}}"
+    echo "Try '`basename ${0}` --help' for more information"
+    exit 1
+}
+
+invalidparam(){
+    echo "`basename ${0}`: invalid parameters ${1:+--'${1}'} ${2:+: ${2}}"
+    echo "Try '`basename ${0}` --help' for more information"
+    exit 1
+}
+
+####################### set param, location and file
+
+TARBALL_LOC=~/Downloads
+
+###################### parse positional parameters
+while [[ $1 ]]; do
+    case $1 in
+        -l | --location )
+            TARBALL_LOC=$2
+            if [[ -z $2 ]]; then
+                invalidopt $1 "must be followed by a path"
+            else
+                shift 2
+            fi
+            ;;
+        -s | --system )
+            FLAG_SYS="s"
+            shift
+            ;;
+        -x )
+            FLAG_DO="y"
+            shift
+            ;;
+        -h | --help )
+            usage
+            break
+            ;;
+        -- ) # End of all options
+            shift
+            break
+            ;;
+        -* )
+            invalidopt $1
+            ;;
+        * )
+            DIRECTORY=$1
+            shift
+           ;;
+    esac
+done
+
+#################### check  -s flag
+if [[ $FLAG_SYS == "s" && $(id -u) -ne 0 ]]; then
+  invalidopt "-s" "option must used by root"
+fi
+
+#################### prepare and display vairable
+if [[ $(id -u) -eq 0 ]]; then
+  DEST_DIRECTORY=${DIRECTORY:-/opt}
+  DEST_PROFILE="/etc/profile.d/java.sh"
+else
+  DEST_DIRECTORY=${DIRECTORY:-~/opt}
+  DEST_PROFILE=~/.bashrc
+fi
+
+TARBALL_JAVA=$(ls ${TARBALL_LOC}/jdk-*-linux-x64.tar.gz)
+T=$(tar ztvf ${TARBALL_JAVA} | head -1 | gawk '{print $6}')
+DIR_NAME_JAVA=${T%%/*}
+JAVA_HOME=${DEST_DIRECTORY}/java
+
+TARBALL_MAVEN=$(ls ${TARBALL_LOC}/apache-maven-*.tar.gz)
+T=$(tar ztvf ${TARBALL_MAVEN} | head -1 | gawk '{ print $6}')
+DIR_NAME_MAVEN=${T%%/*}
+MAVEN_HOME=${DEST_DIRECTORY}/maven
+
+TARBALL_TOMCAT=$(ls ${TARBALL_LOC}/apache-tomcat-*.tar.gz)
+T=$(tar ztvf ${TARBALL_TOMCAT} | head -1 | gawk '{ print $6}')
+DIR_NAME_TOMCAT=${T%%/*}
+CATALINA_HOME=${DEST_DIRECTORY}/tomcat
+
+
+
+echo -e "TARBALL_LOC=\e[1m${TARBALL_LOC}\e[0m"
+
+echo -e "TARBALL_JAVA=\e[1m${TARBALL_JAVA}\e[0m"
+echo -e "DIR_NAME_JAVA=\e[1m${DIR_NAME_JAVA}\e[0m"
+echo -e "TARBALL_MAVEN=\e[1m${TARBALL_MAVEN}\e[0m"
+echo -e "DIR_NAME_MAVEN=\e[1m${DIR_NAME_MAVEN}\e[0m"
+echo -e "TARBALL_TOMCAT=\e[1m${TARBALL_TOMCAT}\e[0m"
+echo -e "DIR_NAME_TOMCAT=\e[1m${DIR_NAME_TOMCAT}\e[0m"
+
+echo -e "DEST_DIRECTORY=\e[1m${DEST_DIRECTORY}\e[0m"
+echo -e "DEST_PROFILE=\e[1m${DEST_PROFILE}\e[0m"
+
+
+if [[ -z $FLAG_DO ]]; then
+    echo -e "\e[1mNOT do anything!\e[0m display param, location and file for test"
+    exit 0
+fi
+
+# ################## extract tarball to destination and make links
+mkdir -p  $DEST_DIRECTORY/tools
+tar zxvf ${TARBALL_JAVA} -C ${DEST_DIRECTORY}/tools
+tar zxvf ${TARBALL_MAVEN} -C ${DEST_DIRECTORY}/tools
+tar zxvf ${TARBALL_TOMCAT} -C ${DEST_DIRECTORY}/tools
+
+ln  -sf ${DEST_DIRECTORY}/tools/$DIR_NAME_JAVA ${DEST_DIRECTORY}/java
+ln  -sf ${DEST_DIRECTORY}/tools/$DIR_NAME_MAVEN ${DEST_DIRECTORY}/maven
+ln  -sf ${DEST_DIRECTORY}/tools/$DIR_NAME_TOMCAT ${DEST_DIRECTORY}/tomcat
+
+
+################### generate and put java.sh
+START_FLAG="##### start setup-java-env"
+END_FLAG="##### end setup-java-env"
+touch $DEST_PROFILE
+grep  "$START_FLAG" $DEST_PROFILE > /dev/null
+STATUS=$?
+if [[ ! $STATUS -eq 0 ]]; then
+ed -s $DEST_PROFILE <<EOF
+a
+
+$START_FLAG
+export JAVA_HOME=${JAVA_HOME}
+export MAVEN_HOME=${MAVEN_HOME}
+export CATALINA_HOME=${CATALINA_HOME}
+export PATH=\$JAVA_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
+$END_FLAG
+
+.
+w
+EOF
+
+else
+ed -s $DEST_PROFILE > /dev/null 2>&1 <<EOF
+/${START_FLAG}/
+.ka
+/${END_FLAG}/
+.kb
+'a+1,'b-1d
+'aa
+export JAVA_HOME=${JAVA_HOME}
+export MAVEN_HOME=${MAVEN_HOME}
+export CATALINA_HOME=${CATALINA_HOME}
+export PATH=\$JAVA_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
+.
+w
+EOF
+fi
+
+
+
+
