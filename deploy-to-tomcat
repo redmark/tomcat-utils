@@ -15,10 +15,12 @@ Catalina engine is supported, tomcat CONTEXT version is not support
                     -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
                     CATALINA_HOME enviroment variable is not set yet, error
                     arise then exit
+  -x                Really do the command! Without the option, NOT do
+                    anything! display param, location and file for test
   -h, --help        display this help and exit
 
 EXAMPLE
-    `basename ${0}` -d /var/apps -b /var/catalina_base  ~/example.war /
+    `basename ${0}` -d /var/apps -b /var/catalina_base  ~/example.war / -x
     `basename ${0}`  ~/example.war  /api/v1.0
 "
     exit 1
@@ -58,8 +60,8 @@ while [[ $1 ]]; do
             fi
             shift 2
             ;;
-        -t | --test )
-            FLAG_TEST=0
+        -x )
+            FLAG_DO="y"
             shift
             ;;
         -h | --help )
@@ -144,9 +146,9 @@ echo -e "\tDEST_WEBAPP_LOC=\e[1m${DEST_WEBAPP_LOC}\e[0m"
 echo -e "\tDEST_CONTEXT_LOC=\e[1m${DEST_CONTEXT_LOC}\e[0m"
 echo -e "\tDEST_CONTEXT_FILE=\e[1m${DEST_CONTEXT_FILE}\e[0m"
 
-if [[ $FLAG_TEST ]]; then
-  echo -e "\e[1mNOT do anything!\e[0m display param, location and file for test"
-  exit 0
+if [[ -z $FLAG_DO ]]; then
+    echo -e "\e[1mNOT do anything!\e[0m display param, location and file for test"
+    exit 0
 fi
 
 ###################### cp webapp
