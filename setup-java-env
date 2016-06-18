@@ -4,7 +4,7 @@ usage(){
     echo -e \
 "
 Install jdk, tomcat and maven tarball, generate script to set JAVA_HOME
-MAVEN_HOME CATALINA_HOME and PATH enviroment variable.
+MAVEN_HOME CATALINA_HOME and PATH environment variable.
 
   DIRECTORY         directory will be created to hold symbolic links of jdk,
                     tomcat and maven, while DIRECTORY/tools to hold their
@@ -13,8 +13,8 @@ MAVEN_HOME CATALINA_HOME and PATH enviroment variable.
   -l, --location    The location of local tarballs, default ~/Downloads
   -s, --system      System wide installation. If set, default DIRECTORY set to
                     /opt, a java.sh script will be generate to /etc/profile.d/
-                    which contains java maven tomcat enviroment variable.
-                    Otherwise default DIRECTORY set to ~/opt and enviroment
+                    which contains java maven tomcat environment variable.
+                    Otherwise default DIRECTORY set to ~/opt and environment
                     variable set in ~/.bashrc. If -s is set, the script must
                     run by root or sudo
   -x                Really do the command! Without the option, NOT do
@@ -85,6 +85,11 @@ done
 #################### check  -s flag
 if [[ $FLAG_SYS == "s" && $(id -u) -ne 0 ]]; then
   invalidopt "-s" "option must used by root"
+fi
+
+#################### check  TARBALL
+if [[ ! -e $TARBALL_LOC || ! -d $TARBALL_LOC ]]; then
+  invalidopt "-l" "default tarball location $TARBALL_LOC not exist, use -l"
 fi
 
 #################### prepare and display vairable
@@ -179,7 +184,3 @@ export PATH=\$JAVA_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
 w
 EOF
 fi
-
-
-
-
