@@ -13,7 +13,7 @@ Catalina engine is supported, tomcat CONTEXT version is not support
                     if not set,DEFAULT is CATALINA_BASE/apps.
   -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
                     -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
-                    CATALINA_HOME enviroment variable is not set yet, error
+                    CATALINA_HOME environment variable is not set yet, error
                     arise then exit
   -x                Really do the command! Without the option, NOT do
                     anything! display param, location and file for test
@@ -100,7 +100,7 @@ fi
 
 if [[ -z $CATALINA_BASE ]]; then
     invalidopt "-b"  "-b CATALINA_BASE need be set, or set CATALINA_BASE or
-    CATALINA_HOME variable in enviroment"
+    CATALINA_HOME variable in environment"
 fi
 
 ############ check WEBAPP and CONTEXT
@@ -160,4 +160,3 @@ test -e ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE} && rm ${DEST_CONTEXT_LOC}/${DES
 mkdir $DEST_CONTEXT_LOC -p && touch ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
 echo "<Context path=\"${CONTEXT}\" docBase=\"${DEST_WEBAPP_LOC}/${WEBAPPNAME}\"/>" >> ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
-

@@ -7,8 +7,8 @@ Make one or more tomcat CATALINA_BASE directory
 
   DIRECTORY         Destination DIRECTORY(s) for CATALINA_BASE
 
-  -m, --home        Overides CATALINA_HOME enviroment variable. If
-                    CATALINA_HOME enviroment variable is not set yet, error
+  -m, --home        Overides CATALINA_HOME environment variable. If
+                    CATALINA_HOME environment variable is not set yet, error
                     arise then exit
   -u, --user        Set the owner of CATALINA_BASE DIRECTORY. If the bash
                     executor is not root, the option will be ignored.
@@ -83,7 +83,7 @@ done
 
 ############# check CATALINA_HOME
 if [[ -z $CATALINA_HOME ]]; then
-    invalidopt "-m"  "-m CATALINA_HOME need be set, or set in enviroment variable"
+    invalidopt "-m"  "-m CATALINA_HOME need be set, or set in environment variable"
 fi
 
 if [[ ${#DEST_CATALINA_BASES[@]} -eq 0 ]]; then
