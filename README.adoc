@@ -1,11 +1,14 @@
 = tomcat-utils
 
 some bash script for tomcat
+----
+  $ sudo setup-java-env -s -x
+  $ source /etc/profile
+  $ sudo -E setup-catalina-base ~/catalina_base -x        //<1>
+  $ setup-catalina-base -b  ~/catalina_base  ~/example.war /example/v1.0 -x //<2>
+----
 
-  $ sudo setup-java-env -s -x                     #setup java tomcat maven
-  $ sudo setup-catalina-base ~/catalina_base -x   #setup a catalina base
-  $ setup-catalina-base -b  ~/catalina_base  ~/example.war /example/v1.0 -x
-
-deploy example.war to a catalina_base on context /example/v1.0
+<1> -E will keep the CATALINA_HOME environment variable
+<2> deploy example.war to a catalina_base on context /example/v1.0
 
 see details in --help option
