@@ -58,7 +58,6 @@ while [[ $1 ]]; do
             else
                 shift 2
             fi
-            shift 2
             ;;
         -x )
             FLAG_DO="y"
@@ -106,7 +105,7 @@ fi
 ############ check WEBAPP and CONTEXT
 WEBAPP_EXTNAME=${WEBAPP##*.}
 if [[ ! -f $WEBAPP || ${WEBAPP_EXTNAME,,} != "war" ]]; then
-    invalidparam "WEBAPP" "must be war file"
+    invalidparam "WEBAPP" "must be a existed warfile"
 fi
 
 #### /
