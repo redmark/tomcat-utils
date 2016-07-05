@@ -1,14 +1,29 @@
 = tomcat-utils
 
 some bash script for tomcat
+
+* `setup-java-env` install jdk gradle maven tomcat , and setup
+`JAVA_HOME GRADLE_HOME MAVEN_HOME CATALINA_HOME` and `PATH` variables
+* `setup-catalina-base` setup a CATALINA_BASE directory
+* `deploy-to-tomcat` deploy a war file to tomcat
+
+see details with --help option
+
+.sample command
 ----
-  $ sudo setup-java-env -s -x
+  $ sudo setup-java-env -s -x //<1>
   $ source /etc/profile
-  $ sudo -E setup-catalina-base ~/catalina_base -x        //<1>
-  $ setup-catalina-base -b  ~/catalina_base  ~/example.war /example/v1.0 -x //<2>
+  $ sudo -E setup-catalina-base ~/catalina_base -x        //<2>
+  $ deploy-to-tomcat -b  ~/catalina_base  ~/example.war /example/v1.0 -x //<3>
 ----
 
-<1> -E will keep the CATALINA_HOME environment variable
-<2> deploy example.war to a catalina_base on context /example/v1.0
+<1> Ubuntu will fore `PATH` to secure path configured in in `/etc/sudoer`,
+so path to `setup-java-env` is needed. +
+This command will install those tarballs to `/opt/`, and set those variables
+ in `/etc/profile.d/java.sh`
 
-see details in --help option
+<2> `-E` will keep the `CATALINA_HOME` environment variable +
+This commad will setup a catalina_base in your home.  For `startup.sh` or `shutdown.sh` the tomcat,
+you need to add `export CATALINA_BASE=~/catalina_base` to `~/.bashrc`
+
+<3> deploy `example.war` to  `~/catalina_base` directory on context `/example/v1.0`
