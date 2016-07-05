@@ -3,7 +3,7 @@ usage(){
     echo "Usage: `basename ${0}` options... DIRECTORY"
     echo -e \
 "
-Install jdk, tomcat and maven tarball, generate script to set JAVA_HOME
+Install jdk, tomcat, maven and gradle tarball, generate script to set JAVA_HOME
 MAVEN_HOME CATALINA_HOME and PATH environment variable.
 
   DIRECTORY         directory will be created to hold symbolic links of jdk,
@@ -101,27 +101,32 @@ else
   DEST_PROFILE=~/.bashrc
 fi
 
-TARBALL_JAVA=$(ls ${TARBALL_LOC}/jdk-*-linux-x64.tar.gz)
+TARBALL_JAVA=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^jdk-.*-linux-x64\.tar\.gz$" | sort -r | head -1)
 T=$(tar ztvf ${TARBALL_JAVA} | head -1 | gawk '{print $6}')
 DIR_NAME_JAVA=${T%%/*}
 JAVA_HOME=${DEST_DIRECTORY}/java
 
-TARBALL_MAVEN=$(ls ${TARBALL_LOC}/apache-maven-*.tar.gz)
+TARBALL_GRADLE=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^gradle-.*-(all|bin)\.zip$" | sort -r | head -1)
+T=$(unzip -l ${TARBALL_GRADLE} | head -4 | tail -1 | gawk '{ print $4}')
+DIR_NAME_GRADLE=${T%%/*}
+GRADLE_HOME=${DEST_DIRECTORY}/gradle
+
+TARBALL_MAVEN=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^apache-maven-.*\.tar\.gz$" | sort -r | head -1)
 T=$(tar ztvf ${TARBALL_MAVEN} | head -1 | gawk '{ print $6}')
 DIR_NAME_MAVEN=${T%%/*}
 MAVEN_HOME=${DEST_DIRECTORY}/maven
 
-TARBALL_TOMCAT=$(ls ${TARBALL_LOC}/apache-tomcat-*.tar.gz)
+TARBALL_TOMCAT=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^apache-tomcat-.*\.tar\.gz$" | sort -r | head -1)
 T=$(tar ztvf ${TARBALL_TOMCAT} | head -1 | gawk '{ print $6}')
 DIR_NAME_TOMCAT=${T%%/*}
 CATALINA_HOME=${DEST_DIRECTORY}/tomcat
-
-
 
 echo -e "TARBALL_LOC=\e[1m${TARBALL_LOC}\e[0m"
 
 echo -e "TARBALL_JAVA=\e[1m${TARBALL_JAVA}\e[0m"
 echo -e "DIR_NAME_JAVA=\e[1m${DIR_NAME_JAVA}\e[0m"
+echo -e "TARBALL_GRADLE=\e[1m${TARBALL_GRADLE}\e[0m"
+echo -e "DIR_NAME_GRADLE=\e[1m${DIR_NAME_GRADLE}\e[0m"
 echo -e "TARBALL_MAVEN=\e[1m${TARBALL_MAVEN}\e[0m"
 echo -e "DIR_NAME_MAVEN=\e[1m${DIR_NAME_MAVEN}\e[0m"
 echo -e "TARBALL_TOMCAT=\e[1m${TARBALL_TOMCAT}\e[0m"
@@ -139,13 +144,14 @@ fi
 # ################## extract tarball to destination and make links
 mkdir -p  $DEST_DIRECTORY/tools
 tar zxvf ${TARBALL_JAVA} -C ${DEST_DIRECTORY}/tools
+unzip ${TARBALL_GRADLE} -d ${DEST_DIRECTORY}/tools
 tar zxvf ${TARBALL_MAVEN} -C ${DEST_DIRECTORY}/tools
 tar zxvf ${TARBALL_TOMCAT} -C ${DEST_DIRECTORY}/tools
 
-ln  -sf ${DEST_DIRECTORY}/tools/$DIR_NAME_JAVA ${DEST_DIRECTORY}/java
-ln  -sf ${DEST_DIRECTORY}/tools/$DIR_NAME_MAVEN ${DEST_DIRECTORY}/maven
-ln  -sf ${DEST_DIRECTORY}/tools/$DIR_NAME_TOMCAT ${DEST_DIRECTORY}/tomcat
-
+ln  -snf ${DEST_DIRECTORY}/tools/$DIR_NAME_JAVA ${DEST_DIRECTORY}/java
+ln  -snf ${DEST_DIRECTORY}/tools/$DIR_NAME_GRADLE ${DEST_DIRECTORY}/gradle
+ln  -snf ${DEST_DIRECTORY}/tools/$DIR_NAME_MAVEN ${DEST_DIRECTORY}/maven
+ln  -snf ${DEST_DIRECTORY}/tools/$DIR_NAME_TOMCAT ${DEST_DIRECTORY}/tomcat
 
 ################### generate and put java.sh
 START_FLAG="##### start setup-java-env"
@@ -159,9 +165,10 @@ a
 
 $START_FLAG
 export JAVA_HOME=${JAVA_HOME}
+export GRADLE_HOME=${GRADLE_HOME}
 export MAVEN_HOME=${MAVEN_HOME}
 export CATALINA_HOME=${CATALINA_HOME}
-export PATH=\$JAVA_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
+export PATH=\$JAVA_HOME/bin:\$GRADLE_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
 $END_FLAG
 
 .
@@ -172,14 +179,15 @@ else
 ed -s $DEST_PROFILE > /dev/null 2>&1 <<EOF
 /${START_FLAG}/
 .ka
-/${END_FLAG}/
+/${END_FLAG}/t
 .kb
 'a+1,'b-1d
 'aa
 export JAVA_HOME=${JAVA_HOME}
+export GRADLE_HOME=${GRADLE_HOME}
 export MAVEN_HOME=${MAVEN_HOME}
 export CATALINA_HOME=${CATALINA_HOME}
-export PATH=\$JAVA_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
+export PATH=\$JAVA_HOME/bin:\$GRADLE_HOME/bin:\$MAVEN_HOME/bin:\$CATALINA_HOME/bin:\$PATH
 .
 w
 EOF
