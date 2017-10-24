@@ -87,7 +87,7 @@ if [[ -z $CATALINA_HOME ]]; then
 fi
 
 if [[ ${#DEST_CATALINA_BASES[@]} -eq 0 ]]; then
-  invalidparam "" "must set at lease one DIRECTORY"
+  invalidparam "" "must set at least one DIRECTORY"
 fi
 
 ##################### check whether can not read tomcat conf
