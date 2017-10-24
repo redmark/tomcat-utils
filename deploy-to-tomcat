@@ -7,7 +7,8 @@ Deploy webapp to tomcat on a context. Deploying webapp to localhost on
 Catalina engine is supported, tomcat CONTEXT version is not support
 
   WEBAPP      can be war file or directory
-  CONTEXT     must start with /, can has sub directory
+  CONTEXT     must start with /, can has sub directory, and can @virtual_host_name.
+              if no @virtual_host_name,  war will be deployed to localhost
 
   -d, --dest        The destination directory the WEBAPP will be deployed to,
                     if not set,DEFAULT is CATALINA_BASE/apps.
@@ -22,6 +23,7 @@ Catalina engine is supported, tomcat CONTEXT version is not support
 EXAMPLE
     `basename ${0}` -d /var/apps -b /var/catalina_base  ~/example.war / -x
     `basename ${0}`  ~/example.war  /api/v1.0
+    `basename ${0}`  ~/example.war  /api/v1.0@abc
 "
     exit 1
 }
@@ -102,6 +104,10 @@ if [[ -z $CATALINA_BASE ]]; then
     CATALINA_HOME variable in environment"
 fi
 
+if [[ ! -d $CATALINA_BASE ]]; then
+    invalidopt "-b"  "is not a valid directory"
+fi
+
 ############ check WEBAPP and CONTEXT
 WEBAPP_EXTNAME=${WEBAPP##*.}
 if [[ ! -f $WEBAPP || ${WEBAPP_EXTNAME,,} != "war" ]]; then
@@ -113,24 +119,29 @@ fi
 #### /abc/
 #### /abc/xyz
 #### /abc/x-y_z/v1.1
-CONTEXT_REGEX="^/(([a-zA-Z0-9._\-]+/?)*)$"
+#### /abc/x-y_z/v1.1@test
+CONTEXT_REGEX="^(/(([a-zA-Z0-9._\-]+/?)*))(@([a-zA-Z0-9]+))?$"
 
 if [[ ! $CONTEXT =~ $CONTEXT_REGEX ]]; then
-    invalidparam "CONTEXT" "must be started with /"
+    invalidparam "CONTEXT" "must be /context@vhost or /context"
 else
     #https://tomcat.apache.org/tomcat-8.0-doc/config/context.html
-    CONTEXT_FILE=${BASH_REMATCH[1]}           # get context after /
+    CONTEXT_FILE=${BASH_REMATCH[2]}           # get context after /
     CONTEXT_FILE=${CONTEXT_FILE%/}            # cut last / if existed , e.g. abc/  => abc
     CONTEXT_FILE=${CONTEXT_FILE:-ROOT}        # set file name to ROOT if empty
     CONTEXT_FILE=${CONTEXT_FILE//\//#}.xml    # change / to #
 
-    CONTEXT=${BASH_REMATCH[0]}                # get context
+    CONTEXT=${BASH_REMATCH[1]}                # get context
+
+    VHOST=${BASH_REMATCH[5]}                  # get vhost
+    VHOST=${VHOST:-localhost}                 # set vhost to localhost if empty
+
     CONTEXT=${CONTEXT%/}                      #
 fi
 
 #################### prepare and display vairable
 DEST_WEBAPP_LOC=${DEST_WEBAPP_LOC:-$CATALINA_BASE/apps}
-DEST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/localhost
+DEST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/$VHOST
 DEST_CONTEXT_FILE=$CONTEXT_FILE
 WEBAPPNAME=$(basename ${WEBAPP})
 
@@ -140,6 +151,7 @@ echo -e "\tCATALINA_BASE=\e[1m${CATALINA_BASE}\e[0m"
 echo -e "\tWEBAPP=\e[1m${WEBAPP}\e[0m"
 echo -e "\tWEBAPPNAME=\e[1m${WEBAPPNAME}\e[0m"
 echo -e "\tCONTEXT=\e[1m${CONTEXT}\e[0m"
+echo -e "\tVHOST=\e[1m${VHOST}\e[0m"
 echo "-----------------------------"
 echo -e "\tDEST_WEBAPP_LOC=\e[1m${DEST_WEBAPP_LOC}\e[0m"
 echo -e "\tDEST_CONTEXT_LOC=\e[1m${DEST_CONTEXT_LOC}\e[0m"
