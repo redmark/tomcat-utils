@@ -1,0 +1,152 @@
+#!/bin/bash
+usage(){
+    echo "Usage: `basename ${0}` [OPTIONS]... VIRTUALHOST..."
+    echo -e \
+"
+Make one or more tomcat virtual host config in CATALINA_BASE directory
+
+  VIRTUALHOST       Destination DIRECTORY(s) for CATALINA_BASE
+
+  -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
+                    -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
+                    CATALINA_HOME environment variable is not set yet, error
+                    arise then exit
+  -x                Really do the command! Without the option, NOT do
+                    anything! display param, location and file for test
+  -h, --help        display this help and exit
+
+EXAMPLE
+    `basename ${0}` -m /opt/tomcat ~/base1 -x
+    `basename ${0}` ~/base1 ~/base2 ~/base3
+    sudo `basename ${0}` ~/base1 -u foo
+"
+    exit 1
+}
+
+invalidopt(){
+    echo "`basename ${0}`: invalid option ${1:+--'${1}'} ${2:+: ${2}}"
+    echo "Try '`basename ${0}` --help' for more information"
+    exit 1
+}
+
+invalidparam(){
+    echo "`basename ${0}`: invalid parameters ${1:+--'${1}'} ${2:+: ${2}}"
+    echo "Try '`basename ${0}` --help' for more information"
+    exit 1
+}
+
+newhost(){
+  host=$2
+  appBase="webapp/$2"
+  prefix="$2_acccess_log"
+  nHost0="\n"
+  nHost1="      <Host name=\"${host}\"  appBase=\"${appBase}\"\n"
+  nHost2="            unpackWARs=\"true\" autoDeploy=\"true\">\n"
+  nHost3="        <Valve className=\"org.apache.catalina.valves.AccessLogValve\" directory=\"logs\"\n"
+  nHost4="               prefix=\"${prefix}\" suffix=\".txt\"\n"
+  nHost5="               pattern=\"%h %l %u %t &quot;%r&quot; %s %b\" />\n"
+  nHost6="        <Valve className=\"ch.qos.logback.access.tomcat.LogbackValve\"/>\n"
+  nHost7="      </Host>"
+
+  nHost=${nHost0}${nHost1}${nHost2}${nHost3}${nHost4}${nHost5}${nHost6}${nHost7}
+  content=$(sed "/<\/Engine>/i \\${nHost}" <<< "$1")
+}
+
+###################### parse positional parameters
+while [[ $1 ]]; do
+    case $1 in
+        -b | --base )
+            CATALINA_BASE=$2
+            if [[ -z $2 ]]; then
+                invalidopt $1 "must be followed by a path"
+            else
+                shift 2
+            fi
+            ;;
+        -x )
+            FLAG_DO="y"
+            shift
+            ;;
+        -h | --help )
+            usage
+            break
+            ;;
+        -- ) # End of all options
+            shift
+            break
+            ;;
+        -* )
+            invalidopt $1
+            ;;
+        * )
+            VIRTUALHOSTS[${#VIRTUALHOSTS[@]}]=$1 #put in VIRTUALHOSTS array
+            shift
+           ;;
+    esac
+done
+
+############# check CATALINA_BASE & CATALINA_HOME
+if [[ -z $CATALINA_BASE ]]; then
+    echo "CATALINA_BASE is not set, set it to CATALINA_HOME"
+    CATALINA_BASE=$CATALINA_HOME
+fi
+
+if [[ -z $CATALINA_BASE ]]; then
+    invalidopt "-b"  "-b CATALINA_BASE need be set, or set CATALINA_BASE or
+    CATALINA_HOME variable in environment"
+fi
+
+if [[ ! -d $CATALINA_BASE ]]; then 
+    invalidopt "-b"  "is not a valid directory"
+fi
+
+##############  check server.xml
+if [[ ! -f $CATALINA_BASE/conf/server.xml ]]; then
+  invalidparam "" "CATALINA_BASE is not valid"
+fi
+
+##############  check VIRTUALHOSTS
+if [[ ${#VIRTUALHOSTS[@]} -eq 0 ]]; then
+  invalidparam "" "must set at least one VIRTUALHOST"
+fi
+
+VIRTUALHOST_REGEX="^[a-z][a-zA-Z0-9]*$"
+
+for i in ${VIRTUALHOSTS[@]}; do
+  if [[ ! $i =~ $VIRTUALHOST_REGEX ]]; then 
+    invalidparam "$i" "is not valid virtual host name"
+  fi
+done
+
+#################### prepare and display vairable
+CONFIG_FILE=$CATALINA_BASE/conf/server.xml
+VIRTUALHOST_CONTEXT_ROOTDIR=$CATALINA_BASE/conf/Catalina
+VIRTUALHOST_WEBAPP_ROOTDIR=$CATALINA_BASE/webappsVHR
+
+echo "Display param, location and file"
+echo -e "\tCATALINA_HOME=\e[1m$CATALINA_HOME\e[0m"
+echo -e "\tCATALINA_BASE=\e[1m${CATALINA_BASE}\e[0m"
+echo -e "\tCONFIG_FILE=\e[1m${CONFIG_FILE}\e[0m"
+echo -e "\tVIRTUALHOST_CONTEXT_ROOTDIR=\e[1m${VIRTUALHOST_CONTEXT_ROOTDIR}\e[0m"
+echo -e "\tVIRTUALHOST_WEBAPP_ROOTDIR=\e[1m${VIRTUALHOST_WEBAPP_ROOTDIR}\e[0m"
+echo -e "\tvirtual host(s)...=\e[1m${VIRTUALHOSTS[@]}\e[0m"
+
+
+if [[ -z $FLAG_DO ]]; then
+  echo -e "\e[1mNOT do anything!\e[0m display param, virtual host name for test"
+  exit 0
+fi
+
+echo
+content=$(cat $CONFIG_FILE)
+for i in ${VIRTUALHOSTS[@]}; do
+  if [[ $(echo "$content" | grep " *<Host name=\"$i\"") ]]; then
+    echo "existed, ingore: $i ";
+  else
+    echo "newhost, addnew: $i"
+    mkdir -p $VIRTUALHOST_WEBAPP_ROOTDIR/$i;  echo -e "\tmkdir \e[1m$VIRTUALHOST_WEBAPP_ROOTDIR/$i\e[0m"
+    mkdir -p $VIRTUALHOST_CONTEXT_ROOTDIR/$i; echo -e "\tmkdir \e[1m$VIRTUALHOST_CONTEXT_ROOTDIR/$i\e[0m"
+    newhost "$content" $i
+    echo "$content" > $CONFIG_FILE
+  fi
+done
