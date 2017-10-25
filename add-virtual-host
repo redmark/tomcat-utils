@@ -37,7 +37,7 @@ invalidparam(){
 
 newhost(){
   host=$2
-  appBase="webapp/$2"
+  appBase="webappsVHR/$2"
   prefix="$2_acccess_log"
   nHost0="\n"
   nHost1="      <Host name=\"${host}\"  appBase=\"${appBase}\"\n"
