@@ -141,19 +141,21 @@ fi
 
 #################### prepare and display vairable
 DEST_WEBAPP_LOC=${DEST_WEBAPP_LOC:-$CATALINA_BASE/apps}
+DEST_WEBAPP_FILE=$(basename ${WEBAPP})
+DEST_WEBAPP_FILE="${DEST_WEBAPP_FILE%.*}.$(date +%Y%m%d.%H%M%S).${DEST_WEBAPP_FILE##*.}"
+
 DEST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/$VHOST
 DEST_CONTEXT_FILE=$CONTEXT_FILE
-WEBAPPNAME=$(basename ${WEBAPP})
 
 echo "Display param, location and file"
 echo -e "\tCATALINA_HOME=\e[1m${CATALINA_HOME}\e[0m"
 echo -e "\tCATALINA_BASE=\e[1m${CATALINA_BASE}\e[0m"
 echo -e "\tWEBAPP=\e[1m${WEBAPP}\e[0m"
-echo -e "\tWEBAPPNAME=\e[1m${WEBAPPNAME}\e[0m"
 echo -e "\tCONTEXT=\e[1m${CONTEXT}\e[0m"
 echo -e "\tVHOST=\e[1m${VHOST}\e[0m"
 echo "-----------------------------"
 echo -e "\tDEST_WEBAPP_LOC=\e[1m${DEST_WEBAPP_LOC}\e[0m"
+echo -e "\tDEST_WEBAPP_FILE=\e[1m${DEST_WEBAPP_FILE}\e[0m"
 echo -e "\tDEST_CONTEXT_LOC=\e[1m${DEST_CONTEXT_LOC}\e[0m"
 echo -e "\tDEST_CONTEXT_FILE=\e[1m${DEST_CONTEXT_FILE}\e[0m"
 
@@ -163,11 +165,11 @@ if [[ -z $FLAG_DO ]]; then
 fi
 
 ###################### cp webapp
-test -e ${DEST_WEBAPP_LOC}/${WEBAPPNAME} && rm ${DEST_WEBAPP_LOC}/${WEBAPPNAME}
-mkdir $DEST_WEBAPP_LOC -p && cp $WEBAPP $DEST_WEBAPP_LOC
+test -e ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE} && rm ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}
+mkdir $DEST_WEBAPP_LOC -p && cp $WEBAPP $DEST_WEBAPP_LOC/$DEST_WEBAPP_FILE
 
 ###################### build context configuration file
 test -e ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE} && rm ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
 mkdir $DEST_CONTEXT_LOC -p && touch ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
-echo "<Context path=\"${CONTEXT}\" docBase=\"${DEST_WEBAPP_LOC}/${WEBAPPNAME}\"/>" >> ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
+echo "<Context path=\"${CONTEXT}\" docBase=\"${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}\"/>" >> ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
