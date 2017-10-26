@@ -166,5 +166,5 @@ else
   mkdir -p $VIRTUALHOST_WEBAPP_LOC;  echo -e "\tmkdir \e[1m$VIRTUALHOST_WEBAPP_LOC\e[0m"
   mkdir -p $VIRTUALHOST_CONTEXT_LOC; echo -e "\tmkdir \e[1m$VIRTUALHOST_CONTEXT_LOC\e[0m"
   newhost "$content" $VIRTUALHOST ${ALIASES[@]}
-  echo "$content" #> $CONFIG_FILE
+  echo "$content" > $CONFIG_FILE
 fi
