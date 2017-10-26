@@ -3,7 +3,8 @@ usage(){
     echo "Usage: `basename ${0}` [OPTIONS]... VIRTUALHOST..."
     echo -e \
 "
-Make one or more tomcat virtual host config in CATALINA_BASE directory
+Make one or more tomcat virtual host config in CATALINA_BASE directory. If the 
+VIRTUALHOST had defined in server.xml, this one will be ignored
 
   VIRTUALHOST       Destination DIRECTORY(s) for CATALINA_BASE
 
@@ -140,7 +141,7 @@ fi
 echo
 content=$(cat $CONFIG_FILE)
 for i in ${VIRTUALHOSTS[@]}; do
-  if [[ $(echo "$content" | grep " *<Host name=\"$i\"") ]]; then
+  if [[ $(echo "$content" | grep " *<Host *name= *\"$i\"") ]]; then
     echo "existed, ingore: $i ";
   else
     echo "newhost, addnew: $i"
