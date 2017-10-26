@@ -48,7 +48,7 @@ newhost(){
   hl2="            unpackWARs=\"true\" autoDeploy=\"true\">\n"
   
   for i in ${@:3}; do
-    a="        <Alias>${i}<Alias>\n"
+    a="        <Alias>${i}</Alias>\n"
     alias="${alias}${a}"
   done
   
