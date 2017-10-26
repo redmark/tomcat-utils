@@ -159,7 +159,7 @@ fi
 
 echo
 content=$(cat $CONFIG_FILE)
-if [[ $(echo "$content" | grep " *<Host *name= *\"$i\"") ]]; then
+if [[ $(echo "$content" | grep " *<Host *name= *\"$VIRTUALHOST\"") ]]; then
   echo "existed, ingore: $VIRTUALHOST ";
 else
   echo "newhost, addnew: $VIRTUALHOST"

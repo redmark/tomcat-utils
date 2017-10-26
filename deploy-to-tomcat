@@ -142,7 +142,6 @@ fi
 #################### prepare and display vairable
 DEST_WEBAPP_LOC=${DEST_WEBAPP_LOC:-$CATALINA_BASE/apps}
 DEST_WEBAPP_FILE=$(basename ${WEBAPP})
-DEST_WEBAPP_FILE="${DEST_WEBAPP_FILE%.*}.$(date +%Y%m%d.%H%M%S).${DEST_WEBAPP_FILE##*.}"
 
 DEST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/$VHOST
 DEST_CONTEXT_FILE=$CONTEXT_FILE
@@ -165,7 +164,7 @@ if [[ -z $FLAG_DO ]]; then
 fi
 
 ###################### cp webapp
-test -e ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE} && rm ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}
+test -e ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE} && mv ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE} ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}.bak$(date +%Y%m%d.%H%M%S)
 mkdir $DEST_WEBAPP_LOC -p && cp $WEBAPP $DEST_WEBAPP_LOC/$DEST_WEBAPP_FILE
 
 ###################### build context configuration file
