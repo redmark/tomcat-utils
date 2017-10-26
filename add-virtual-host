@@ -1,12 +1,14 @@
 #!/bin/bash
 usage(){
-    echo "Usage: `basename ${0}` [OPTIONS]... VIRTUALHOST..."
+    echo "Usage: `basename ${0}` [OPTIONS]... VIRTUALHOST  [ALIAS...]"
     echo -e \
 "
-Make one or more tomcat virtual host config in CATALINA_BASE directory. If the 
-VIRTUALHOST had defined in server.xml, this one will be ignored
+Make one tomcat virtual host config in CATALINA_BASE directory. If the 
+VIRTUALHOST had defined in server.xml, this one will be ignored. this VIRTUALHOST
+can have one or more alias
 
-  VIRTUALHOST       Destination DIRECTORY(s) for CATALINA_BASE
+  VIRTUALHOST       virtual host name
+  ALIAS             optional one or more VIRTUALHOST alias
 
   -b, --base        Overide the env CATALINA_BASE. If no CATALINA_BASE enviro
                     -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
@@ -17,9 +19,9 @@ VIRTUALHOST had defined in server.xml, this one will be ignored
   -h, --help        display this help and exit
 
 EXAMPLE
-    `basename ${0}` -m /opt/tomcat ~/base1 -x
-    `basename ${0}` ~/base1 ~/base2 ~/base3
-    sudo `basename ${0}` ~/base1 -u foo
+    `basename ${0}` -b /opt/tomcat abc -x
+    `basename ${0}` abc abc.somesite.com
+    `basename ${0}` abc abc.somesite.com xyz.somesite.com
 "
     exit 1
 }
@@ -40,16 +42,22 @@ newhost(){
   host=$2
   appBase="webappsVHR/$2"
   prefix="$2_acccess_log"
-  nHost0="\n"
-  nHost1="      <Host name=\"${host}\"  appBase=\"${appBase}\"\n"
-  nHost2="            unpackWARs=\"true\" autoDeploy=\"true\">\n"
-  nHost3="        <Valve className=\"org.apache.catalina.valves.AccessLogValve\" directory=\"logs\"\n"
-  nHost4="               prefix=\"${prefix}\" suffix=\".txt\"\n"
-  nHost5="               pattern=\"%h %l %u %t &quot;%r&quot; %s %b\" />\n"
-  nHost6="        <Valve className=\"ch.qos.logback.access.tomcat.LogbackValve\"/>\n"
-  nHost7="      </Host>"
 
-  nHost=${nHost0}${nHost1}${nHost2}${nHost3}${nHost4}${nHost5}${nHost6}${nHost7}
+  hl0="\n"
+  hl1="      <Host name=\"${host}\"  appBase=\"${appBase}\"\n"
+  hl2="            unpackWARs=\"true\" autoDeploy=\"true\">\n"
+  
+  for i in ${@:3}; do
+    a="        <Alias>${i}<Alias>\n"
+    alias="${alias}${a}"
+  done
+  
+  hl3="        <Valve className=\"org.apache.catalina.valves.AccessLogValve\" directory=\"logs\"\n"
+  hl4="               prefix=\"${prefix}\" suffix=\".txt\"\n"
+  hl5="               pattern=\"%h %l %u %t &quot;%r&quot; %s %b\" />\n"
+  hl6="      </Host>"
+
+  nHost=${hl0}${hl1}${hl2}${alias}${hl3}${hl4}${hl5}${hl6}
   content=$(sed "/<\/Engine>/i \\${nHost}" <<< "$1")
 }
 
@@ -80,7 +88,11 @@ while [[ $1 ]]; do
             invalidopt $1
             ;;
         * )
-            VIRTUALHOSTS[${#VIRTUALHOSTS[@]}]=$1 #put in VIRTUALHOSTS array
+            if [[ -z $VIRTUALHOST ]]; then
+                VIRTUALHOST=$1
+            else
+                ALIASES[${#ALIASES[@]}]=$1 #put in ALIASES array
+            fi
             shift
            ;;
     esac
@@ -106,32 +118,39 @@ if [[ ! -f $CATALINA_BASE/conf/server.xml ]]; then
   invalidparam "" "CATALINA_BASE is not valid"
 fi
 
-##############  check VIRTUALHOSTS
-if [[ ${#VIRTUALHOSTS[@]} -eq 0 ]]; then
-  invalidparam "" "must set at least one VIRTUALHOST"
+##############  check VIRTUALHOS
+if [[ -z $VIRTUALHOST ]]; then
+  invalidparam "" "must set one VIRTUALHOST"
 fi
 
-VIRTUALHOST_REGEX="^[a-z][a-zA-Z0-9]*$"
+VIRTUALHOST_REGEX="^[a-z][a-zA-Z0-9._\-]*$"
 
-for i in ${VIRTUALHOSTS[@]}; do
-  if [[ ! $i =~ $VIRTUALHOST_REGEX ]]; then 
-    invalidparam "$i" "is not valid virtual host name"
-  fi
-done
+if [[ ! $VIRTUALHOST =~ $VIRTUALHOST_REGEX ]]; then 
+  invalidparam "$VIRTUALHOST" "is not valid virtual host name"
+fi
+
+##############  check ALIAS
+if [[ ${#ALIASES[@]} -gt 0 ]]; then
+  for i in ${ALIASES[@]}; do
+    if [[ ! $i =~ $VIRTUALHOST_REGEX ]]; then 
+      invalidparam "$i" "is not valid virtual host alias name"
+    fi
+  done
+fi
 
 #################### prepare and display vairable
 CONFIG_FILE=$CATALINA_BASE/conf/server.xml
-VIRTUALHOST_CONTEXT_ROOTDIR=$CATALINA_BASE/conf/Catalina
-VIRTUALHOST_WEBAPP_ROOTDIR=$CATALINA_BASE/webappsVHR
+VIRTUALHOST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/$VIRTUALHOST
+VIRTUALHOST_WEBAPP_LOC=$CATALINA_BASE/webappsVHR/$VIRTUALHOST
 
 echo "Display param, location and file"
 echo -e "\tCATALINA_HOME=\e[1m$CATALINA_HOME\e[0m"
 echo -e "\tCATALINA_BASE=\e[1m${CATALINA_BASE}\e[0m"
 echo -e "\tCONFIG_FILE=\e[1m${CONFIG_FILE}\e[0m"
-echo -e "\tVIRTUALHOST_CONTEXT_ROOTDIR=\e[1m${VIRTUALHOST_CONTEXT_ROOTDIR}\e[0m"
-echo -e "\tVIRTUALHOST_WEBAPP_ROOTDIR=\e[1m${VIRTUALHOST_WEBAPP_ROOTDIR}\e[0m"
-echo -e "\tvirtual host(s)...=\e[1m${VIRTUALHOSTS[@]}\e[0m"
-
+echo -e "\tVIRTUALHOST=\e[1m${VIRTUALHOST}\e[0m"
+echo -e "\tVIRTUALHOST_CONTEXT_LOC=\e[1m${VIRTUALHOST_CONTEXT_LOC}\e[0m"
+echo -e "\tVIRTUALHOST_WEBAPP_LOC=\e[1m${VIRTUALHOST_WEBAPP_LOC}\e[0m"
+echo -e "\talias(es)...=\e[1m${ALIASES[@]}\e[0m"
 
 if [[ -z $FLAG_DO ]]; then
   echo -e "\e[1mNOT do anything!\e[0m display param, virtual host name for test"
@@ -140,14 +159,12 @@ fi
 
 echo
 content=$(cat $CONFIG_FILE)
-for i in ${VIRTUALHOSTS[@]}; do
-  if [[ $(echo "$content" | grep " *<Host *name= *\"$i\"") ]]; then
-    echo "existed, ingore: $i ";
-  else
-    echo "newhost, addnew: $i"
-    mkdir -p $VIRTUALHOST_WEBAPP_ROOTDIR/$i;  echo -e "\tmkdir \e[1m$VIRTUALHOST_WEBAPP_ROOTDIR/$i\e[0m"
-    mkdir -p $VIRTUALHOST_CONTEXT_ROOTDIR/$i; echo -e "\tmkdir \e[1m$VIRTUALHOST_CONTEXT_ROOTDIR/$i\e[0m"
-    newhost "$content" $i
-    echo "$content" > $CONFIG_FILE
-  fi
-done
+if [[ $(echo "$content" | grep " *<Host *name= *\"$i\"") ]]; then
+  echo "existed, ingore: $VIRTUALHOST ";
+else
+  echo "newhost, addnew: $VIRTUALHOST"
+  mkdir -p $VIRTUALHOST_WEBAPP_LOC;  echo -e "\tmkdir \e[1m$VIRTUALHOST_WEBAPP_LOC\e[0m"
+  mkdir -p $VIRTUALHOST_CONTEXT_LOC; echo -e "\tmkdir \e[1m$VIRTUALHOST_CONTEXT_LOC\e[0m"
+  newhost "$content" $VIRTUALHOST ${ALIASES[@]}
+  echo "$content" #> $CONFIG_FILE
+fi
