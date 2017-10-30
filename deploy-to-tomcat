@@ -16,6 +16,7 @@ Catalina engine is supported, tomcat CONTEXT version is not support
                     -ment variable, CATALINA_BASE is set to CATALINA_HOME, If
                     CATALINA_HOME environment variable is not set yet, error
                     arise then exit
+  -k, --bak         bakup old war
   -x                Really do the command! Without the option, NOT do
                     anything! display param, location and file for test
   -h, --help        display this help and exit
@@ -60,6 +61,10 @@ while [[ $1 ]]; do
             else
                 shift 2
             fi
+            ;;
+        -k | --bak )
+            FLAG_BAK="y"
+            shift
             ;;
         -x )
             FLAG_DO="y"
@@ -142,9 +147,11 @@ fi
 #################### prepare and display vairable
 DEST_WEBAPP_LOC=${DEST_WEBAPP_LOC:-$CATALINA_BASE/apps}
 DEST_WEBAPP_FILE=$(basename ${WEBAPP})
+DEST_WEBAPP_FILE_FULLNAME=${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}
 
 DEST_CONTEXT_LOC=$CATALINA_BASE/conf/Catalina/$VHOST
 DEST_CONTEXT_FILE=$CONTEXT_FILE
+DEST_CONTEXT_FILE_FULLNAME=${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
 
 echo "Display param, location and file"
 echo -e "\tCATALINA_HOME=\e[1m${CATALINA_HOME}\e[0m"
@@ -164,11 +171,24 @@ if [[ -z $FLAG_DO ]]; then
 fi
 
 ###################### cp webapp
-test -e ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE} && mv ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE} ${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}.bak$(date +%Y%m%d.%H%M%S)
-mkdir $DEST_WEBAPP_LOC -p && cp $WEBAPP $DEST_WEBAPP_LOC/$DEST_WEBAPP_FILE
+if [[ -e $DEST_WEBAPP_FILE_FULLNAME && -n $FLAG_BAK ]]; then
+  MANIFEST=$(unzip -p $DEST_WEBAPP_FILE_FULLNAME META-INF/MANIFEST.MF)
+
+  REVISION=$(sed -n "s/\(SVN-Revision: \)\([0-9]*\).*/r\2/p" <<< "$MANIFEST")
+  REVISION=${REVISION:--}
+
+  BUILDTIME=$(sed -n "s/\(Build-Time: \)\([0-9 :+-]*\).*/\2/p" <<< "$MANIFEST")
+  BUILDTIME=${BUILDTIME:-$(stat $DEST_WEBAPP_FILE_FULLNAME -c %y)}
+  BUILDTIME=$(date -d "$BUILDTIME" +%Y%m%d.%H%M%S)
+
+  SUFFIX=$REVISION.$BUILDTIME
+
+  mv $DEST_WEBAPP_FILE_FULLNAME $DEST_WEBAPP_FILE_FULLNAME.$SUFFIX
+fi
+mkdir $DEST_WEBAPP_LOC -p && cp $WEBAPP $DEST_WEBAPP_FILE_FULLNAME
 
 ###################### build context configuration file
-test -e ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE} && rm ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
-mkdir $DEST_CONTEXT_LOC -p && touch ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
-echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
-echo "<Context path=\"${CONTEXT}\" docBase=\"${DEST_WEBAPP_LOC}/${DEST_WEBAPP_FILE}\"/>" >> ${DEST_CONTEXT_LOC}/${DEST_CONTEXT_FILE}
+test -e $DEST_CONTEXT_FILE_FULLNAME && rm $DEST_CONTEXT_FILE_FULLNAME
+mkdir $DEST_CONTEXT_LOC -p && touch $DEST_CONTEXT_FILE_FULLNAME
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $DEST_CONTEXT_FILE_FULLNAME
+echo "<Context path=\"${CONTEXT}\" docBase=\"$DEST_WEBAPP_FILE_FULLNAME\"/>" >> $DEST_CONTEXT_FILE_FULLNAME
