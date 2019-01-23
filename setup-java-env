@@ -17,6 +17,7 @@ MAVEN_HOME CATALINA_HOME and PATH environment variable.
                     Otherwise default DIRECTORY set to ~/opt and environment
                     variable set in ~/.bashrc. If -s is set, the script must
                     run by root or sudo
+  -o, --openjdk     install openjdk instead of oraclejdk 
   -x                Really do the command! Without the option, NOT do
                     anything! display param, location and file for test
   -h, --help        display this help and exit
@@ -60,6 +61,10 @@ while [[ $1 ]]; do
             FLAG_SYS="s"
             shift
             ;;
+        -o | --openjdk )
+            FLAG_OPENJDK="o"
+            shift
+            ;;
         -x )
             FLAG_DO="y"
             shift
@@ -101,9 +106,17 @@ else
   DEST_PROFILE=~/.bashrc
 fi
 
-TARBALL_JAVA=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^jdk-.*-linux-x64\.tar\.gz$" | sort -r | head -1)
+if [[ $FLAG_OPENJDK != "o" ]]; then
+  TARBALL_JAVA=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^jdk-.*-linux-x64\.tar\.gz$" | sort -r | head -1)
+else
+  TARBALL_JAVA=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "openjdk-.*_linux-x64_bin\.tar\.gz$" | sort -r | head -1)
+fi
 T=$(tar ztvf ${TARBALL_JAVA} | head -1 | gawk '{print $6}')
-DIR_NAME_JAVA=${T%%/*}
+if [[ $FLAG_OPENJDK != "o" ]]; then
+  DIR_NAME_JAVA=${T%%/*}
+else
+  DIR_NAME_JAVA=open${T%%/*}
+fi
 JAVA_HOME=${DEST_DIRECTORY}/java
 
 TARBALL_GRADLE=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^gradle-.*-(all|bin)\.zip$" | sort -r | head -1)
