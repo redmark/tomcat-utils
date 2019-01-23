@@ -112,11 +112,7 @@ else
   TARBALL_JAVA=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "openjdk-.*_linux-x64_bin\.tar\.gz$" | sort -r | head -1)
 fi
 T=$(tar ztvf ${TARBALL_JAVA} | head -1 | gawk '{print $6}')
-if [[ $FLAG_OPENJDK != "o" ]]; then
-  DIR_NAME_JAVA=${T%%/*}
-else
-  DIR_NAME_JAVA=open${T%%/*}
-fi
+DIR_NAME_JAVA=${T%%/*}
 JAVA_HOME=${DEST_DIRECTORY}/java
 
 TARBALL_GRADLE=${TARBALL_LOC}/$(ls $TARBALL_LOC | egrep "^gradle-.*-(all|bin)\.zip$" | sort -r | head -1)
